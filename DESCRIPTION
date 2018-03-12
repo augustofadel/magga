@@ -1,0 +1,24 @@
+Package: magga
+Type: Package
+Title: Microaggregation method based on BRKGA
+Version: 0.1.0
+Authors@R: person("Augusto", "Fadel", email = "augustofadel@gmail.com", 
+    role = c("aut", "cre"))
+URL: https://github.com/augustofadel/magga/
+BugReports: https://github.com/augustofadel/magga/issues
+Maintainer: Augusto Fadel <augustofadel@gmail.com>
+Description: Statisctical Disclosure Control method for numerical variables.
+    Multivariate microaggregation method based on Biased Random Key Genetic 
+    Algorithm.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    TSP (>= 1.1.5),
+    igraph (>= 1.1.2),
+    doParallel (>= 1.0.10),
+    parallel (>= 3.4.0),
+    foreach (>= 1.4.3),
+    dplyr (>= 0.7.4),
+    data.table (>= 1.10.4),
+    sdcMicro (>= 5.1.1)

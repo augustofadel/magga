@@ -1,0 +1,4 @@
+exportPattern("^[[:alpha:]]+")
+importFrom(magrittr, "%>%")
+importFrom(foreach, "%dopar%")
+importFrom(data.table, ".SD")
