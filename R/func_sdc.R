@@ -17,7 +17,7 @@ DLD <- function(dat, dat.agreg) {
   # distancia euclidiana entre objetos originais e agregados
   # if (max(nrow(X), nrow(Y)) > sqrt(.Machine$integer.max)) {
   d <-
-    pdist(dat.agreg, dat) %>%
+    pdist::pdist(dat.agreg, dat) %>%
     as.matrix()
   # } else {
   #
@@ -59,8 +59,41 @@ IL1 <- function(dat, dat.agreg) {
 }
 
 
-# Information Loss: IL2 ---------------------------------------------------
+# # Information Loss: IL1 ---------------------------------------------------
+# # Mateo-Sanz et al. (2004)
+#
+# IL1 <- function(dat, dat.agreg) {
+#   if (any(dat == 0)) {
+#     dat[dat == 0] <- dat.agreg[dat == 0]
+#     dat <- dat[dat != 0]
+#     dat.agreg <- dat.agreg[dat != 0]
+#   }
+#   IL <-
+#     abs(dat - dat.agreg) / abs(dat) %>%
+#     sum() / ncol(dat)
+#   return(IL * 100)
+# }
+
+
+# Information Loss: IL1s --------------------------------------------------
 # Mateo-Sanz et al. (2004)
+
+IL1s <- function(dat, dat.agreg) {
+  den <- sqrt(2) * as.numeric(dat[, lapply(.SD, sd)]) #dat normalizado, sd = 1 para toda variavel
+  n_const <- den != 0
+  den <- den[n_const]
+  dat <- dat %>% subset(select = n_const)
+  dat.agreg <- dat.agreg %>% subset(select = n_const)
+  IL <-
+    abs(dat - dat.agreg) %>%
+    apply(1, function(x) {x / den}) %>%
+    sum() / ncol(dat)
+  return(IL)
+}
+
+
+# Information Loss: IL2 ---------------------------------------------------
+# IL1s em Mateo-Sanz et al. (2004)
 
 IL2 <- function(dat, dat.agreg) {
   den <- sqrt(2) * as.numeric(dat[, lapply(.SD, sd)]) #dat normalizado, sd = 1 para toda variavel
@@ -78,7 +111,7 @@ IL2 <- function(dat, dat.agreg) {
 
 # Information Loss: IL2 relativa ------------------------------------------
 
-IL2_r <- function(dat, dat.agreg) {
+IL2r <- function(dat, dat.agreg) {
   den <- sqrt(2) * as.numeric(dat[, lapply(.SD, sd)]) #dat normalizado, sd = 1 para toda vairavel
   IL <-
     abs(dat - dat.agreg) %>%
@@ -142,4 +175,42 @@ IL3 <- function(dat, dat.agreg) {
     `/`((p * (p + 1))/2)
 
   return(sum(IL) / 5)
+}
+
+
+
+# Information Loss: multivariate measures ---------------------------------
+# Templ (2006)
+
+devvar <- function(dat, dat.agreg) {
+  IL <-
+    (abs(var(dat) - var(dat.agreg)) / abs(var(dat))) %>%
+    sum() %>%
+    `/`(ncol(dat))
+  return(IL)
+}
+
+acov <- function(dat, dat.agreg) {
+  IL <-
+    (abs(cov(dat) - cov(dat.agreg)) / abs(cov(dat))) %>%
+    sum() %>%
+    `/`(2 * ncol(dat))
+  return(IL)
+}
+
+acor <- function(dat, dat.agreg) {
+  IL <-
+    (abs(cor(dat) - cor(dat.agreg)) / abs(cor(dat))) %>%
+    sum() %>%
+    `/`(2 * ncol(dat))
+  return(IL)
+}
+
+amad <- function(dat, dat.agreg) {
+  mad_dat <- mapply(mad, dat)
+  mad_dat.agreg <- mapply(mad, dat.agreg)
+  IL <-
+    (abs(mad_dat - mad_dat.agreg) / abs(mad_dat)) %>%
+    sum(na.rm = TRUE)
+  return(IL)
 }

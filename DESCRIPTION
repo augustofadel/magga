@@ -21,4 +21,5 @@ Imports:
     foreach (>= 1.4.3),
     dplyr (>= 0.7.4),
     data.table (>= 1.10.4),
-    sdcMicro (>= 5.1.1)
+    sdcMicro (>= 5.1.1),
+    pdist (>= 1.2)
