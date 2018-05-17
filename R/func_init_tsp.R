@@ -8,19 +8,19 @@ init_tsp <- function(
   tsp_method = 'farthest_insertion'   # metodo TSP
 ) {
   n_obj <- nrow(dataset)
-  cat('\nCalculando matriz de distancias... ')
   if (is.null(dissim)) {
+    # cat('\nCalculando matriz de distancias... ')
     dissim <-
       dataset %>%
       dist(method = dist_method)
+    # cat('concluido.\n')
   }
-  cat('concluido.\n')
-  cat('Calculando ciclo TSP... ')
+  # cat('Calculando ciclo TSP... ')
   tour <-
     dissim %>%
     TSP::TSP() %>%
     TSP::solve_TSP(method = tsp_method, two_opt = F)
-  cat('concluido.\n')
+  # cat('concluido.\n')
   distance_vec <- city_distance(
     tour = tour,
     dissim = dissim,

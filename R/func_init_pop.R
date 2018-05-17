@@ -2,21 +2,38 @@
 # inicializa populacao ----------------------------------------------------
 
 # (segmenta os objetos em grupos, segundo ordem predefinida ou arvore geradora)
-init_population <- function(k, n_obj, p, input) {
+init_population <- function(k, n_obj, p, input, cl = NULL) {
   if (class(input) == 'data.frame' && dim(input) == c(n_obj - 1, 2)) {
     E <- input
     g <- igraph::graph_from_edgelist(as.matrix(E), directed = F)
-    pop <- sapply(
-      rep(k, p),
-      function(x) tree_to_clus(x, g, E)
-    )
+    if (is.null(cl)) {
+      pop <- sapply(
+        rep(k, p),
+        function(x) tree_to_clus(x, g, E)
+      )
+    } else {
+      pop <- parallel::parSapply(
+        cl,
+        rep(k, p),
+        function(x) tree_to_clus(x, g, E)
+      )
+    }
   } else {
     if (class(input) == 'integer' & length(input) == n_obj) {
       ord <- input
-      pop <- sapply(
-        rep(k, p),
-        function(x) init_individual(x, n_obj)
-      ) %>% apply(2, function (x) x[ord])
+      if (is.null(cl)) {
+        pop <- sapply(
+          rep(k, p),
+          function(x) init_individual(x, n_obj)
+        )
+      } else {
+        pop <- parallel::parSapply(
+          cl,
+          rep(k, p),
+          function(x) init_individual(x, n_obj)
+        )
+      }
+      pop <- pop %>% apply(2, function (x) x[ord])
     } else {
       stop('Argumentos incorretos.')
     }

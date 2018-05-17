@@ -78,13 +78,20 @@ magga <- function
 
   # construcao populacao inicial
   n_agreg <- as.list(n_agreg)
+  if (make_cl) {
+    cl <- parallel::makeCluster(nuc)
+    doParallel::registerDoParallel(cl)
+  } else {
+    cl <- NULL
+  }
   pop <- lapply(
     n_agreg,
     function(x) init_population(
       k = x,
       n_obj = n_obj,
       p = pk,
-      input = input
+      input = input,
+      cl = cl
     )
   )
   names(pop) <- n_agreg
@@ -98,10 +105,6 @@ magga <- function
   }
   if (verbose)
     cat('\nCalculando fitness... ')
-  if (make_cl) {
-    cl <- parallel::makeCluster(nuc)
-    doParallel::registerDoParallel(cl)
-  }
   for (i in 1:length(pop)) {
     if (make_cl) {
       fitness <-
