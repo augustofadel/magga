@@ -63,7 +63,7 @@ tree_to_clus <- function(k, g, E) {
   ne <- nrow(E)
   E <- E[sample(1:ne),]
   i <- 1
-  while (diameter(g) >= 2 * k & i <= ne) {
+  while (igraph::diameter(g) >= 2 * k & i <= ne) {
     aux <- igraph::delete_edges(g, paste0(E[i,], collapse = '|'))
     shortest_component <- igraph::components(aux)$csize %>% min()
     if (shortest_component >= k)
