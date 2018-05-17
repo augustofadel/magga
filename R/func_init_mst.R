@@ -6,15 +6,16 @@ init_mst <- function(
   dist_method = 'euclidean',          # metrica de distancia
   k = k_int                           # niveis de agregacao
 ) {
-  cat('\nCalculando matriz de distancias... ')
   if (is.null(dissim)) {
+    # cat('\nCalculando matriz de distancias... ')
     dissim <-
-      dat %>%
+      dataset %>%
       dist(method = dist_method) %>%
       as.matrix()
+    # cat('concluido.\n')
   }
-  cat('concluido.\n')
-  cat('\nConstruindo grafo... ')
+  # cat('\nConstruindo grafo... ')
+  n <- nrow(dataset)
   V <- 1:n
   E <- expand.grid(V, V)
   E <- E[E[,1] != E[,2],]
@@ -22,10 +23,10 @@ init_mst <- function(
     E %>%
     apply(1, function(x) dissim[x[1], x[2]]) %>%
     unname()
-  cat('concluido.\n')
-  cat('\nObtendo arvore geradora minima...\n')
+  # cat('concluido.\n')
+  # cat('\nObtendo arvore geradora minima...\n')
   init_path <- kruskal_dc(V, E, w, 2 * min(k))
-  cat('\nconcluido.\n')
+  # cat('\nconcluido.\n')
 
   return(init_path)
 }
