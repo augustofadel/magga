@@ -1,6 +1,6 @@
 # Microaggregation k-means
 # Aloise and Araujo (2015) p.6
-kmeans_ma <- function(dat, aggr) {
+kmeans_ma <- function(dat, aggr, dist_method = 'euclidean', dissim = NULL) {
   # padroniza variaveis
   dat <- scale(dat)
   # seleciona valor para o numero de grupos no intervalo [n/(2g-1), n/g]
@@ -10,7 +10,12 @@ kmeans_ma <- function(dat, aggr) {
   # executa k-means
   clus <- kmeans(dat, k)$cluster
   # regenera solucao invalida
-  dissim <- as.matrix(dist(dat))
+  if (is.null(dissim)) {
+    dissim <-
+      dat %>%
+      dist(method = dist_method) %>%
+      as.matrix()
+  }
   tab <- table(clus)
   while (any(tab < aggr)) {
     # if (sum(tab[tab < aggr]) > .02 * nrow(dat)) {

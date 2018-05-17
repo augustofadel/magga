@@ -45,7 +45,7 @@ kruskal_dc <- function(V, E, w, d) {
   S[,'root'] <- V
   S[,'rank'] <- 1
   E <- E[order(w),]
-  pb <- txtProgressBar(min = 0, max = nrow(E), width = 100, style = 3)
+  # pb <- txtProgressBar(min = 0, max = nrow(E), width = 100, style = 3)
   for (i in 1:nrow(E)) {
     d1 <- deg[E[i, 1]]
     d2 <- deg[E[i, 2]]
@@ -55,9 +55,9 @@ kruskal_dc <- function(V, E, w, d) {
       deg[E[i, 2]] <- d2 + 1
       S <- union_ds(E[i,], S)
     }
-    setTxtProgressBar(pb, i)
+    # setTxtProgressBar(pb, i)
   }
-  close(pb)
+  # close(pb)
   return(ET)
 }
 

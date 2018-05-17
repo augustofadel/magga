@@ -11,10 +11,11 @@ magga <- function
 (
   dataset,
   dissim = NULL,
-  vars = NULL,
+  vars_select = NULL,
   n_agreg = c(3, 4, 5, 10),
   metricas = c('IL1'),
   d = 'euclidean',
+  pop = NULL,
   init_path = 'TSP',
   pk = 100,
   tot_ger = 200,
@@ -33,7 +34,7 @@ magga <- function
 
   # Data input --------------------------------------------------------------
 
-  if (!is.null(vars))
+  if (!is.null(vars_select))
     dataset <- dataset %>% select(vars)
   tipo <- !dataset %>% sapply(class) %in% c('numeric', 'integer')
   if (all(tipo))
@@ -41,8 +42,10 @@ magga <- function
   if (any(tipo))
     warning('Atributos nao numericos ignorados.')
   dat <-
-    dataset[, !tipo] %>%
-    data.table::data.table()
+    dataset %>%
+    data.table::data.table() %>%
+    dplyr::select((1:ncol(dataset))[!tipo])
+
   if (is.null(dissim)) {
     dissim <-
       dataset[, !tipo] %>%
@@ -54,68 +57,83 @@ magga <- function
 
   # Inicializacao -----------------------------------------------------------
 
-  if (verbose)
-    cat('\nGerando populacoes iniciais:\n')
+  if (is.null(pop)) {
+    if (verbose)
+      cat('\nGerando populacoes iniciais:\n')
 
-  # Vetor de inicializacao fornecido
-  if (init_path %>% is.numeric) {
-    # Verificacao de consistencia
-    if (init_path %>% is.wholenumber | init_path %>% length == n_obj) {
-      input <- init_path
+    # Vetor de inicializacao fornecido
+    if (init_path %>% is.numeric) {
+      # Verificacao de consistencia
+      if (init_path %>% is.wholenumber | init_path %>% length == n_obj) {
+        input <- init_path
+      } else {
+        stop('O caminho de inicializacao deve ser um vetor de inteiros de comprimento igual ao total de objetos.')
+      }
+    } else if (init_path %>% is.character & init_path %in% c('TSP', 'MST')) {
+      # Vetor de inicializacao atraves de rota TSP (Mortazavi e Jalili (2014))
+      if (init_path == 'TSP')
+        input <- init_tsp(dat, dissim)
+      # sequencia de objetos atraves de AGM (sugestao Prof. Satoru)
+      if (init_path == 'MST')
+        input <- init_mst(dat, as.matrix(dissim))
     } else {
-      stop('O caminho de inicializacao deve ser um vetor de inteiros de comprimento igual ao total de objetos.')
+      stop('Impossivel inicializar populacao.')
     }
-  } else if (init_path %>% is.character & init_path %in% c('TSP', 'MST')) {
-    # Vetor de inicializacao atraves de rota TSP (Mortazavi e Jalili (2014))
-    if (init_path == 'TSP')
-      input <- init_tsp(dat, dissim)
-    # sequencia de objetos atraves de AGM (sugestao Prof. Satoru)
-    if (init_path == 'MST')
-      input <- init_mst(dat, as.matrix(dissim))
-  } else {
-    stop('Impossivel inicializar populacao.')
+
+    # construcao populacao inicial
+    n_agreg <- as.list(n_agreg)
+    if (make_cl) {
+      cl <- parallel::makeCluster(nuc)
+    } else {
+      cl <- NULL
+    }
+    pop <- lapply(
+      n_agreg,
+      function(x) init_population(
+        k = x,
+        n_obj = n_obj,
+        p = pk,
+        input = input,
+        cl = cl
+      )
+    )
+    if (make_cl)
+      parallel::stopCluster(cl)
+    names(pop) <- n_agreg
+    if (multik) {
+      pop <- list(do.call('cbind', pop))
+      sol <- vector('list', 1)
+      names(sol) <- names(pop) <- 'multik'
+    } else {
+      sol <- vector('list', length(n_agreg))
+      names(sol) <- paste0('k=', n_agreg)
+    }
   }
 
-  # construcao populacao inicial
-  n_agreg <- as.list(n_agreg)
-  if (make_cl) {
-    cl <- parallel::makeCluster(nuc)
-    doParallel::registerDoParallel(cl)
-  } else {
-    cl <- NULL
-  }
-  pop <- lapply(
-    n_agreg,
-    function(x) init_population(
-      k = x,
-      n_obj = n_obj,
-      p = pk,
-      input = input,
-      cl = cl
-    )
-  )
-  names(pop) <- n_agreg
-  if (multik) {
-    pop <- list(do.call('cbind', pop))
-    sol <- vector('list', 1)
-    names(sol) <- names(pop) <- 'multik'
-  } else {
-    sol <- vector('list', length(n_agreg))
-    names(sol) <- paste0('k=', n_agreg)
-  }
   if (verbose)
     cat('\nCalculando fitness... ')
+  if (make_cl) {
+    cl <- parallel::makeCluster(nuc)
+    # doParallel::registerDoParallel(cl)
+  }
   for (i in 1:length(pop)) {
     if (make_cl) {
-      fitness <-
-        foreach::foreach(
-          j = 1:ncol(pop[[i]]),
-          .combine = 'cbind',
-          .packages = c('data.table', 'dplyr', 'pdist'),
-          .export = c('fit', 'agreg', 'DLD', 'SDID', 'IL1', 'IL2', 'IL3')
-        ) %dopar% {
-          fit(dat, pop[[i]][ , j], metricas)
-        }
+      # fitness <-
+      #   foreach::foreach(
+      #     j = 1:ncol(pop[[i]]),
+      #     .combine = 'cbind',
+      #     .packages = c('data.table', 'dplyr', 'pdist'),
+      #     .export = c('fit', 'agreg', 'DLD', 'SDID', 'IL1', 'IL2', 'IL3')
+      #   ) %dopar% {
+      #     fit(dat, pop[[i]][ , j], metricas)
+      #   }
+      clusterExport(cl, list('fit', 'dat', 'metricas'))
+      fitness <- parallel::parApply(
+        cl,
+        pop[[i]],
+        2,
+        function(x) {fit(dat, x, metricas)}
+      )
     } else {
       fitness <- matrix(NA, ncol = ncol(pop[[i]]), nrow = length(metricas))
       for (j in 1:ncol(pop[[i]])) {
