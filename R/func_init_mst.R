@@ -15,8 +15,7 @@ init_mst <- function(
     # cat('concluido.\n')
   }
   # cat('\nConstruindo grafo... ')
-  n <- nrow(dataset)
-  V <- 1:n
+  V <- 1:nrow(dataset)
   E <- expand.grid(V, V)
   E <- E[E[,1] != E[,2],]
   w <-
@@ -36,7 +35,7 @@ init_mst <- function(
 
 kruskal_dc <- function(V, E, w, d) {
   ET <- NULL
-  deg <- vector('integer', n)
+  deg <- vector('integer', nrow(dataset))
   S <- matrix(
     data = 0,
     nrow = length(V),
