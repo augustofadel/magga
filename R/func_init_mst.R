@@ -35,7 +35,7 @@ init_mst <- function(
 
 kruskal_dc <- function(V, E, w, d) {
   ET <- NULL
-  deg <- vector('integer', nrow(dataset))
+  deg <- vector('integer', length(V))
   S <- matrix(
     data = 0,
     nrow = length(V),
