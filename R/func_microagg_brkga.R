@@ -10,6 +10,7 @@ magga <- function
 # Parametros --------------------------------------------------------------
 (
   dataset,
+  dissim = NULL,
   vars = NULL,
   n_agreg = c(3, 4, 5, 10),
   metricas = c('IL1'),
@@ -42,6 +43,11 @@ magga <- function
   dat <-
     dataset[, !tipo] %>%
     data.table::data.table()
+  if (is.null(dissim)) {
+    dissim <-
+      dataset[, !tipo] %>%
+      dist(method = d)
+  }
   n_obj <- nrow(dat)
   n_agreg <- sort(n_agreg)
 
@@ -62,10 +68,10 @@ magga <- function
   } else if (init_path %>% is.character & init_path %in% c('TSP', 'MST')) {
     # Vetor de inicializacao atraves de rota TSP (Mortazavi e Jalili (2014))
     if (init_path == 'TSP')
-      input <- init_tsp(dataset = dat, dist_method = d)
+      input <- init_tsp(dat, dissim)
     # sequencia de objetos atraves de AGM (sugestao Prof. Satoru)
     if (init_path == 'MST')
-      input <- init_mst(dat, d)
+      input <- init_mst(dat, as.matrix(dissim))
   } else {
     stop('Impossivel inicializar populacao.')
   }

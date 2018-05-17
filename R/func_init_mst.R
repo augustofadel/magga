@@ -2,28 +2,31 @@
 
 init_mst <- function(
   dataset,
+  dissim = NULL,
   dist_method = 'euclidean',          # metrica de distancia
   k = k_int                           # niveis de agregacao
 ) {
   cat('\nCalculando matriz de distancias... ')
-  dissim <- 
-    dat %>% 
-    dist(method = d) %>% 
-    as.matrix()
+  if (is.null(dissim)) {
+    dissim <-
+      dat %>%
+      dist(method = dist_method) %>%
+      as.matrix()
+  }
   cat('concluido.\n')
   cat('\nConstruindo grafo... ')
   V <- 1:n
   E <- expand.grid(V, V)
   E <- E[E[,1] != E[,2],]
-  w <- 
-    E %>% 
-    apply(1, function(x) dissim[x[1], x[2]]) %>% 
+  w <-
+    E %>%
+    apply(1, function(x) dissim[x[1], x[2]]) %>%
     unname()
   cat('concluido.\n')
   cat('\nObtendo arvore geradora minima...\n')
   init_path <- kruskal_dc(V, E, w, 2 * min(k))
   cat('\nconcluido.\n')
-  
+
   return(init_path)
 }
 
@@ -34,9 +37,9 @@ kruskal_dc <- function(V, E, w, d) {
   ET <- NULL
   deg <- vector('integer', n)
   S <- matrix(
-    data = 0, 
-    nrow = length(V), 
-    ncol = 2, 
+    data = 0,
+    nrow = length(V),
+    ncol = 2,
     dimnames = list(V, c('root', 'rank'))
   )
   S[,'root'] <- V

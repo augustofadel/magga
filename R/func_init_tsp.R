@@ -3,14 +3,17 @@
 
 init_tsp <- function(
   dataset,
+  dissim = NULL,
   dist_method = 'euclidean',          # metrica de distancia
   tsp_method = 'farthest_insertion'   # metodo TSP
 ) {
   n_obj <- nrow(dataset)
   cat('\nCalculando matriz de distancias... ')
-  dissim <-
-    dataset %>%
-    dist(method = dist_method)
+  if (is.null(dissim)) {
+    dissim <-
+      dataset %>%
+      dist(method = dist_method)
+  }
   cat('concluido.\n')
   cat('Calculando ciclo TSP... ')
   tour <-
