@@ -4,7 +4,7 @@ init_mst <- function(
   dataset,
   dissim = NULL,
   dist_method = 'euclidean',          # metrica de distancia
-  k = k_int                           # niveis de agregacao
+  aggr                                # niveis de agregacao
 ) {
   if (is.null(dissim)) {
     # cat('\nCalculando matriz de distancias... ')
@@ -24,7 +24,7 @@ init_mst <- function(
     unname()
   # cat('concluido.\n')
   # cat('\nObtendo arvore geradora minima...\n')
-  init_path <- kruskal_dc(V, E, w, 2 * min(k))
+  init_path <- kruskal_dc(V, E, w, 2 * min(aggr))
   # cat('\nconcluido.\n')
 
   return(init_path)
@@ -33,7 +33,7 @@ init_mst <- function(
 
 # degree constrained kruskal MST algorithm --------------------------------
 
-kruskal_dc <- function(V, E, w, d) {
+kruskal_dc <- function(V, E, w, max_degree) {
   ET <- NULL
   deg <- vector('integer', length(V))
   S <- matrix(
@@ -49,7 +49,7 @@ kruskal_dc <- function(V, E, w, d) {
   for (i in 1:nrow(E)) {
     d1 <- deg[E[i, 1]]
     d2 <- deg[E[i, 2]]
-    if ((find_set(E[i,1], S) != find_set(E[i,2], S)) & d1 < d & d2 < d) {
+    if ((find_set(E[i,1], S) != find_set(E[i,2], S)) & d1 < max_degree & d2 < max_degree) {
       ET <- rbind(ET, E[i,])
       deg[E[i, 1]] <- d1 + 1
       deg[E[i, 2]] <- d2 + 1

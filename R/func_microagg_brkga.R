@@ -203,15 +203,16 @@ magga <- function
         mutant <- do.call('cbind', mutant)
       } else {
         # mutant <- init_population(n_agreg[[i]], n_obj, size_mutant, input)
+        clusterExport(cl, list('n_agreg', 'i', 'dissim'), envir = environment())
         if (toupper(init_method) == 'KMEANS') {
-          clusterExport(cl, list('kmeans_ma', 'clus_regen', 'n_agreg', 'i', 'dissim'))
+          clusterExport(cl, list('kmeans_ma', 'clus_regen'))
           mutant <- parSapply(
             cl,
             1:size_mutant,
             function(x) kmeans_ma(dat, n_agreg[[i]], dissim = as.matrix(dissim))
           )
         } else if (toupper(init_method) == 'TSP') {
-          clusterExport(cl, list('init_population', 'init_tsp', 'n_agreg', 'i', 'dissim'))
+          clusterExport(cl, list('init_population', 'init_tsp'))
           mutant <- init_population(
             k = n_agreg[[i]],
             n_obj = n_obj,
@@ -220,12 +221,12 @@ magga <- function
             cl = cl
           )
         } else if (toupper(init_method) == 'MST') {
-          clusterExport(cl, list('init_population', 'init_mst', 'n_agreg', 'i', 'dissim'))
+          clusterExport(cl, list('init_population', 'init_mst'))
           mutant <- init_population(
             k = n_agreg[[i]],
             n_obj = n_obj,
             p = size_mutant,
-            input = init_mst(dat, dissim),
+            input = init_mst(dat, as.matrix(dissim), aggr = n_agreg[[i]]),
             cl = cl
           )
         } else {
