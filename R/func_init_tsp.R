@@ -68,7 +68,7 @@ tour_to_path <- function(tour, distance_vec, n_obj) {
   }
   path <-
     tour %>%
-    cut_tour(cut_point[1], exclude_cut = F) %>%
+    TSP::cut_tour(cut_point[1], exclude_cut = F) %>%
     unname()
   return(path)
 }
