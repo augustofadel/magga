@@ -2,7 +2,7 @@ decoder1 <- function(u, n_agreg) {
   #u vetor de chaves aleatorias com n posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
   n <- length(u)
-  kinf <- n %/% (2 * n_agreg - 1)
+  kinf <- n %/% (2 * n_agreg)
   ksup <- n %/% n_agreg
   k <- kinf:ksup
   kmax <- k[which.min(u[1:length(k)])]
@@ -14,7 +14,7 @@ decoder1 <- function(u, n_agreg) {
   bounds <-
     list(
       lower = list(ind = 1:kmax, val = rep(n_agreg, kmax)),
-      upper = list(ind = 1:kmax, val = rep(2 * n_agreg - 1, kmax))
+      upper = list(ind = 1:kmax, val = rep(2 * n_agreg, kmax))
     )
 
   # SYMPHONY is an open source solver for solving mixed integer linear programs (MILPs)
@@ -29,11 +29,8 @@ decoder1 <- function(u, n_agreg) {
       types = rep('I', kmax) # objective variables are integers
     )
   ui <- order(u)
-  clus <- try({
-    unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))[ui]
-  })
-  if (class(clus) == 'try-error')
-    clus <- decoder1(u, n_agreg)
+  w <- unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))
+  clus <- w[ui]
   # clus = vetor a distribuicao dos objetos aos grupos
   return(clus)
 }
