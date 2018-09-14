@@ -17,13 +17,15 @@ kmeans_ma <- function(dat, aggr, dist_method = 'euclidean', dissim = NULL) {
       as.matrix()
   }
   tab <- table(clus)
-  while (any(tab < aggr)) {
+  watchdog <- 0
+  while (any(tab < aggr) & watchdog < 200) {
     # if (sum(tab[tab < aggr]) > .02 * nrow(dat)) {
     #   clus <- clus_regen_fast(clus, tab, dissim, aggr)
     # } else {
       clus <- clus_regen(clus, tab, dissim, aggr)
     # }
     tab <- table(clus)
+    watchdog <- watchdog + 1
   }
   return(as.vector(clus))
 }
