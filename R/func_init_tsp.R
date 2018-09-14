@@ -60,7 +60,8 @@ city_distance <- function(tour, dissim, n_obj) {
 # converte rota PCV para caminho ------------------------------------------
 
 tour_to_path <- function(tour, distance_vec, n_obj) {
-  max_dist <- which.max(distance_vec)
+  # max_dist <- which.max(distance_vec)
+  max_dist <- sample(1:n_obj, 1, prob = distance_vec / max(distance_vec))
   if (max_dist == n_obj) {
     cut_point <- as.integer(tour)[1]
   } else {
