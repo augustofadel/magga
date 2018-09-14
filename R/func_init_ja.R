@@ -29,8 +29,13 @@ decoder1 <- function(u, n_agreg) {
       types = rep('I', kmax) # objective variables are integers
     )
   ui <- order(u)
-  w <- unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))
-  clus <- w[ui]
+  # w <- unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))
+  # clus <- w[ui]
+
+  clus <- try(unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))[ui])
+  if (class(clus) == 'try-error' | any(is.na(clus)))
+    clus <- decoder1(runif(n), n_agreg)
+
   # clus = vetor a distribuicao dos objetos aos grupos
   return(clus)
 }
