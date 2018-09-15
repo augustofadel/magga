@@ -3,6 +3,7 @@
 kmeans_ma <- function(dat, aggr, dist_method = 'euclidean', dissim = NULL) {
   # padroniza variaveis
   dat <- scale(dat)
+  rownames(dat) <- as.character(1:nrow(dat))
   # seleciona valor para o numero de grupos no intervalo [n/(2g-1), n/g]
   k <-
     ceiling(nrow(dat) / (2 * aggr - 1)):floor(nrow(dat) / aggr) %>%
@@ -15,6 +16,8 @@ kmeans_ma <- function(dat, aggr, dist_method = 'euclidean', dissim = NULL) {
       dat %>%
       dist(method = dist_method) %>%
       as.matrix()
+  } else {
+    dimnames(dissim) <- list(as.character(1:nrow(dat)), as.character(1:nrow(dat)))
   }
   tab <- table(clus)
   watchdog <- 0
