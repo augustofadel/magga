@@ -1,14 +1,15 @@
 decoder1 <- function(u, n_agreg) {
-  #u vetor de chaves aleatorias com n posicoes correspondente ao n?mero de objeto
+  #u vetor de chaves aleatorias com n_obj posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
-  n <- length(u)
-  kinf <- n %/% (2 * n_agreg)
-  ksup <- n %/% n_agreg
+  n_obj <- length(u)
+  kinf <- n_obj %/% (2 * n_agreg)
+  ksup <- n_obj %/% n_agreg
   k <- kinf:ksup
   kmax <- k[which.min(u[1:length(k)])]
   fobj <- u[1:kmax]  #x1+x2+...+xkmax
-  A <- rep(1, kmax)  #Associada a  x1+x2+...+xk=n
-  b <- n
+  # A <- rep(1, kmax)  #Associada a  x1+x2+...+xk=n_obj
+  A <- matrix(1, 1, kmax)
+  b <- n_obj
   desig <- '=='
   # limites inferior e superior de cada um dos kmax grupos
   bounds <-
@@ -34,14 +35,14 @@ decoder1 <- function(u, n_agreg) {
 
   clus <- try(unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, x$solution[i])))[ui])
   if (class(clus) == 'try-error' | any(is.na(clus)))
-    clus <- decoder1(runif(n), n_agreg)
+    clus <- decoder1(runif(n_obj), n_agreg)
 
   # clus = vetor a distribuicao dos objetos aos grupos
   return(clus)
 }
 
 decoder2 <- function(u, n_agreg) {
-  n <- length(u)
+  n_obj <- length(u)
   ni <- NULL
   k <- 0
   nmin <- n_agreg
@@ -52,10 +53,10 @@ decoder2 <- function(u, n_agreg) {
     nk <- round(nmin + u[k] * (nmax - nmin))
     ni <- c(ni, nk)
     nt <- nt + nk
-    r <- n - nt
+    r <- n_obj - nt
     nmax <- min(nmax, r - n_agreg)
   }
-  if (nt < n) {ni <- c(ni, n - nt)}
+  if (nt < n_obj) {ni <- c(ni, n_obj - nt)}
   ui <- order(u)
   kmax <- length(ni)
   w <- unlist(apply(as.matrix(1:kmax), 1, function(i) rep(i, ni[i])))
