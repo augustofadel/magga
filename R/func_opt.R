@@ -20,12 +20,20 @@ opt_ma_brkga <-
     # Verifica input
     if (is.null(dat) | is.null(universe) | is.null(aggr))
       stop('Input parameters missing.')
-    if (nrow(universe) != nrow(dat))
-      stop('Invalid universe.')
     if (length(metricas) != length(alpha))
       stop('metricas and alpha must have same length.')
     if (any(alpha > 1) | any(alpha <= 0))
       stop('Invalid alpha values.')
+
+    if (is.character(dat))
+      dat <- readRDS(dat)
+    if (is.character(universe))
+      universe <- readRDS(universe)
+    if (is.list(universe))
+      universe <- universe[[as.character(aggr)]]
+
+    if (nrow(universe) != nrow(dat))
+      stop('Invalid universe.')
     tipo <- !dat %>% sapply(class) %in% c('numeric', 'integer')
     if (all(tipo))
       stop('No numeric attibute found.')
