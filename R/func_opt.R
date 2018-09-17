@@ -4,6 +4,7 @@ opt_ma_brkga <-
     pop_universe,
     aggr,
     metricas = c('IL1', 'IL2'), # Quando mais de uma metrica e especificada, a primeira e adotada como funcao objetivo. As demais sao utilizadas apenas como metricas.
+    alpha = c(1, 1),
     dissim = NULL,
     dist_method = 'euclidean',
     pk = 100,
@@ -72,14 +73,14 @@ opt_ma_brkga <-
     if (parallel) {
       parallel::clusterExport(
         cl,
-        c(list('fit', 'agreg', 'dat', 'pop', '%>%', 'metricas'), metricas)
+        c(list('fit', 'agreg', 'dat', 'pop', '%>%', 'metricas', 'alpha'), metricas)
       )
       fitness <-
-        parallel::parApply(cl, pop, 2, function(sol) {fit(dat, sol, metricas)}) %>%
+        parallel::parApply(cl, pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
         matrix(ncol = pk, dimnames = list(metricas, NULL))
     } else {
       fitness <-
-        apply(pop, 2, function(sol) {fit(dat, sol, metricas)}) %>%
+        apply(pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
         matrix(ncol = pk, dimnames = list(metricas, NULL))
     }
 
@@ -139,11 +140,11 @@ opt_ma_brkga <-
             envir = environment()
           )
           fitness <-
-            parallel::parApply(cl, next_pop, 2, function(sol) {fit(dat, sol, metricas)}) %>%
+            parallel::parApply(cl, next_pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
             matrix(ncol = ncol(next_pop), dimnames = list(metricas, NULL))
         } else {
           fitness <-
-            apply(next_pop, 2, function(sol) {fit(dat, sol, metricas)}) %>%
+            apply(next_pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
             matrix(ncol = ncol(next_pop), dimnames = list(metricas, NULL))
         }
 
@@ -187,17 +188,17 @@ opt_ma_brkga <-
   } #end_function
 
 
-
-param_fobj <- function(
-  dat, dat.agreg, metrics = c('IL2', 'DLD'), alpha = c(.5, .5)
-) {
-  if (length(metrics) != length(alpha))
-    stop('metrics and alpha must have same length.')
-  if (sum(alpha) != 1)
-    stop('alpha values must sum 1.')
-  fit.vec <- sapply(
-    metrics,
-    function(x) do.call(x, list(dat, dat.agreg))
-  )
-  return(sum(fit.vec * alpha))
-}
+# Para usar com a funcao de fitness (fit) anterior
+# param_fobj <- function(
+#   dat,
+#   clus,
+#   metrics = c('IL2', 'DLD'),
+#   alpha = c(.5, .5)
+# ) {
+#   if (length(metrics) != length(alpha))
+#     stop('metrics and alpha must have same length.')
+#   if (sum(alpha) != 1)
+#     stop('alpha values must sum 1.')
+#   fit.vec <- sum(fit(dat, clus, metrics) * alpha)
+#   return(fit.vec)
+# }

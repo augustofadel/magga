@@ -50,17 +50,36 @@ crossover_brkga_resamp <- function(ce, cn, pr, k) {
 
 # fitness -----------------------------------------------------------------
 
+# fit <- function(
+#   dat,
+#   clus,
+#   metricas = c('DLD', 'SDID', 'IL1', 'IL2', 'IL2_r', 'IL3')
+# ) {
+#   dat.agreg <- agreg(dat, clus)
+#   fit.vec <- sapply(
+#     metricas,
+#     function(x) do.call(x, list(dat, dat.agreg))
+#   )
+#   return(fit.vec)
+# }
+
 fit <- function(
   dat,
   clus,
-  metricas = c('DLD', 'SDID', 'IL1', 'IL2', 'IL2_r', 'IL3')
+  metricas = c('DLD', 'SDID', 'IL1', 'IL2', 'IL2_r', 'IL3'),
+  alpha = rep(1, length(metricas))
 ) {
+  if (length(metrics) != length(alpha))
+    stop('metrics and alpha must have same length.')
+  if (any(alpha > 1) | any(alpha <= 0))
+    stop('Invalid alpha values.')
   dat.agreg <- agreg(dat, clus)
   fit.vec <- sapply(
-    metricas, 
+    metricas,
     function(x) do.call(x, list(dat, dat.agreg))
   )
+  if (any(alpha < 1)) {
+    fit.vec <- c(sum(fit.vec[alpha < 1] * alpha[alpha < 1]), fit.vec[alpha == 1])
+  }
   return(fit.vec)
 }
-
-
