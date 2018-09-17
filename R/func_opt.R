@@ -1,10 +1,10 @@
 opt_ma_brkga <-
   function(
     dat,
-    pop_universe,
+    universe,
     aggr,
     metricas = c('IL1', 'IL2'), # Quando mais de uma metrica e especificada, a primeira e adotada como funcao objetivo. As demais sao utilizadas apenas como metricas.
-    alpha = c(1, 1),
+    alpha = rep(1, length(metricas)),
     dissim = NULL,
     dist_method = 'euclidean',
     pk = 100,
@@ -18,10 +18,14 @@ opt_ma_brkga <-
   ) {
 
     # Verifica input
-    if (is.null(dat) | is.null(pop_universe) | is.null(aggr))
+    if (is.null(dat) | is.null(universe) | is.null(aggr))
       stop('Input parameters missing.')
-    if (nrow(pop_universe) != nrow(dat))
-      stop('Invalid pop_universe.')
+    if (nrow(universe) != nrow(dat))
+      stop('Invalid universe.')
+    if (length(metricas) != length(alpha))
+      stop('metricas and alpha must have same length.')
+    if (any(alpha > 1) | any(alpha <= 0))
+      stop('Invalid alpha values.')
     tipo <- !dat %>% sapply(class) %in% c('numeric', 'integer')
     if (all(tipo))
       stop('No numeric attibute found.')
@@ -33,6 +37,7 @@ opt_ma_brkga <-
       dat %>%
       data.table::data.table() %>%
       dplyr::select((1:ncol(dat))[!tipo])
+    n_obj <- nrow(dat)
 
     # Calcula matriz de dissimilaridades, se nao fornecida
     if (is.null(dissim))
@@ -53,16 +58,16 @@ opt_ma_brkga <-
     }
 
     # Composicao da populacao inicial
-    if (pk > ncol(pop_universe)) {
+    if (pk > ncol(universe)) {
       repl <- T
       warning('The solution universe is smaller than the population.')
     } else {
       repl <- F
     }
-    pop_sel_prob <- rep(1, ncol(pop_universe))
-    pop_sel <- sample(1:ncol(pop_universe), pk, replace = repl, prob = pop_sel_prob)
+    pop_sel_prob <- rep(1, ncol(universe))
+    pop_sel <- sample(1:ncol(universe), pk, replace = repl, prob = pop_sel_prob)
     pop_sel_prob[pop_sel] <- .1
-    pop <- pop_universe[, pop_sel]
+    pop <- universe[, pop_sel]
 
     # Paralelizacao
     parallel <- is.numeric(nuc)
@@ -73,7 +78,8 @@ opt_ma_brkga <-
     if (parallel) {
       parallel::clusterExport(
         cl,
-        c(list('fit', 'agreg', 'dat', 'pop', '%>%', 'metricas', 'alpha'), metricas)
+        c(list('fit', 'agreg', 'dat', 'pop', '%>%', 'metricas', 'alpha'), metricas),
+        envir = environment()
       )
       fitness <-
         parallel::parApply(cl, pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
@@ -88,7 +94,6 @@ opt_ma_brkga <-
     pop <- rbind(pop, fitness)[, order(fitness[1, ])]
 
     # Iteracoes BRKGA
-    n_obj <- nrow(pop) - length(metricas)
     size_pop <- ncol(pop)
     size_elite <- round(pe * size_pop)
     size_mutant <- round(pm * size_pop)
@@ -108,9 +113,9 @@ opt_ma_brkga <-
         nelite <- current_pop[1:n_obj, (size_elite + 1):size_pop]
 
         # Solucoes mutantes
-        pop_sel <- sample(1:ncol(pop_universe), size_mutant, prob = pop_sel_prob)
+        pop_sel <- sample(1:ncol(universe), size_mutant, prob = pop_sel_prob)
         pop_sel_prob[pop_sel] <- pop_sel_prob[pop_sel] * .99
-        mutant <- pop_universe[, pop_sel]
+        mutant <- universe[, pop_sel]
 
         # Crossover com regeneracao de solucoes inviaveis
         size_cros <- size_pop - ncol(elite) - ncol(mutant)
@@ -183,7 +188,26 @@ opt_ma_brkga <-
     dimnames(sol) <- NULL
 
     # Retorna resultado obtido
-    return(list(final_pop = sol, progress = progress))
+    return(list(
+      param = list(
+        obj_fun = ifelse(
+          all(alpha == 1),
+          metricas[1],
+          paste(alpha[alpha < 1], metricas[alpha < 1], sep = ' * ', collapse = ' + ')
+        ),
+        metrics = metricas,
+        alpha = alpha,
+        population_size = pk,
+        generations = tot_gen,
+        pe = pe,
+        pm = pm,
+        pr = pr,
+        universe_size = ncol(universe),
+        cores = nuc
+      ),
+      final_pop = sol,
+      progress = progress
+    ))
 
   } #end_function
 
