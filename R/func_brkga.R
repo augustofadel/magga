@@ -69,10 +69,6 @@ fit <- function(
   metricas = c('DLD', 'SDID', 'IL1', 'IL2', 'IL2_r', 'IL3'),
   alpha = rep(1, length(metricas))
 ) {
-  if (length(metrics) != length(alpha))
-    stop('metrics and alpha must have same length.')
-  if (any(alpha > 1) | any(alpha <= 0))
-    stop('Invalid alpha values.')
   dat.agreg <- agreg(dat, clus)
   fit.vec <- sapply(
     metricas,
