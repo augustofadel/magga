@@ -34,16 +34,20 @@ data_gen <- function(
 
 
 # Pairwise Hamming distance [Morrison and Jong, 2002] --------------------
-hamming_dist <- function(pop, dist_function = 'd') {
+pairwise_index <- function(pk) {
   index <-
     expand.grid(
-      ui = 1:(ncol(pop) - 1),
-      uj = 2:ncol(pop)
+      ui = 1:(pk - 1),
+      uj = 2:pk
     )
-  index <- index[index[,1] < index[,2],]
+  index <- index[index[, 1] < index[, 2], ]
+  return(index)
+}
+
+hamming_dist <- function(pop, index = pairwise_index(ncol(pop)), dist_function = 'd') {
   res <-
     apply(index, 1, function(x) {
-      sum(abs(pop[,x[1]] - pop[,x[2]]))
+      sum(abs(pop[, x[1]] - pop[, x[2]]))
     })
   return(sum(res))
 }
