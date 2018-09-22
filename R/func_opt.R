@@ -58,9 +58,11 @@ opt_ma_brkga <-
           fitness = vector('list', length(metricas)) %>%
             lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
             purrr::set_names(metricas),
+          diversity = vector('numeric', tot_gen),
           best = matrix(NA, nrow = n_obj, ncol = tot_gen),
           t = vector('numeric', tot_gen)
         )
+      index <- pairwise_index(pk)
     } else {
       progress <- NULL
     }
@@ -173,6 +175,7 @@ opt_ma_brkga <-
       # Salva progresso
       if (save_progress) {
         progress$t[generation] <- gen_time[[3]]
+        progress$diversity[generation] <- hamming_dist(current_pop, index)
         for (metric in 1:nrow(fitness)) {
           progress$fitness[[metric]][generation,] <- current_pop[n_obj + metric,]
         }
