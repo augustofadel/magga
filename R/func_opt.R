@@ -1,10 +1,11 @@
 opt_ma_brkga <-
   function(
-    dat,
-    universe,
-    aggr,
+    dat = NULL,
+    universe = NULL,
+    aggr = 3,
     metricas = c('IL1', 'IL2'), # Quando mais de uma metrica e especificada, a primeira e adotada como funcao objetivo. As demais sao utilizadas apenas como metricas.
-    alpha = rep(1, length(metricas)),
+    alpha = rep.int(1, times = length(metricas)),
+    stop_criteria = c(1, tot_gen), # Diferenca relativa no valor da funcao objetivo para a melhor solucao obtida em 'x' geracoes consecutivas. Ex.: stop_criteria = c(.01, 3) interrompe a excucao do algoritmo se, em 3 execucoes consecutivas, a diferenca no valor da funcao objetivo for inferior a 1%.
     dissim = NULL,
     dist_method = 'euclidean',
     pk = 100,
@@ -58,13 +59,11 @@ opt_ma_brkga <-
           fitness = vector('list', length(metricas)) %>%
             lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
             purrr::set_names(metricas),
-          diversity = vector('numeric', tot_gen),
+          # diversity = vector('numeric', tot_gen),
           best = matrix(NA, nrow = n_obj, ncol = tot_gen),
           t = vector('numeric', tot_gen)
         )
       index <- pairwise_index(pk)
-    } else {
-      progress <- NULL
     }
 
     # Composicao da populacao inicial
@@ -108,13 +107,24 @@ opt_ma_brkga <-
     size_elite <- round(pe * size_pop)
     size_mutant <- round(pm * size_pop)
     current_pop <- pop
-    generation <- 1
+    generation <- 0
+    stop_criteria_count <- 0
 
     # Inicializa barra de progresso
     if (show_progress_bar)
       pb <- txtProgressBar(min = 0, max = tot_gen, style = 3)
 
-    while(generation <= tot_gen) {
+    while(
+      generation < tot_gen &
+      stop_criteria_count < stop_criteria[2]
+    ) {
+
+      # Atualiza contagem geracao
+      generation <- generation + 1
+
+      # Salva valor da f_obj da melhor solucao da ultima geracao
+      best_fobj <- current_pop[n_obj + 1, 1]
+
 
       gen_time <- system.time({
 
@@ -175,19 +185,23 @@ opt_ma_brkga <-
       # Salva progresso
       if (save_progress) {
         progress$t[generation] <- gen_time[[3]]
-        progress$diversity[generation] <- hamming_dist(current_pop, index)
+        # progress$diversity[generation] <- hamming_dist(current_pop, index, cl)
         for (metric in 1:nrow(fitness)) {
           progress$fitness[[metric]][generation,] <- current_pop[n_obj + metric,]
         }
         progress$best[, generation] <- current_pop[1:n_obj, 1]
       }
 
+      # Testa criterio de parada
+      if ((abs(best_fobj - current_pop[n_obj + 1, 1]) / best_fobj) < stop_criteria[1]) {
+        stop_criteria_count <- stop_criteria_count + 1
+      } else {
+        stop_criteria_count <- 0
+      }
+
       # Atualiza barra de progresso
       if (show_progress_bar)
         setTxtProgressBar(pb, generation)
-
-      # Atualiza contagem geracao
-      generation <- generation + 1
 
     } #end_while
 
@@ -198,27 +212,67 @@ opt_ma_brkga <-
     sol <- current_pop[1:n_obj, ]
     dimnames(sol) <- NULL
 
+    # Estrutura resultados para saida
+    if (save_progress) {
+      df_output <-
+        tibble(
+          generations = 1:generation,
+          # diversity = progress$diversity[1:generation],
+          t = progress$t[1:generation]
+        )
+      for (metrics in metricas) {
+        df_output <-
+          df_output %>%
+          add_column(!!metrics := progress$fitness[[metrics]][1:generation, 1])
+      }
+      output <-
+        list(
+          param = list(
+            obj_fun = ifelse(
+              all(alpha == 1),
+              metricas[1],
+              paste(alpha[alpha < 1], metricas[alpha < 1], sep = ' * ', collapse = ' + ')
+            ),
+            metrics = metricas,
+            alpha = alpha,
+            population_size = pk,
+            generations = tot_gen,
+            pe = pe,
+            pm = pm,
+            pr = pr,
+            universe_size = ncol(universe),
+            cores = nuc
+          ),
+          final_population = sol,
+          best_solutions = progress$best,
+          fitness = progress$fitness,
+          progress = df_output
+        )
+    } else {
+      output <-
+        list(
+          param = list(
+            obj_fun = ifelse(
+              all(alpha == 1),
+              metricas[1],
+              paste(alpha[alpha < 1], metricas[alpha < 1], sep = ' * ', collapse = ' + ')
+            ),
+            metrics = metricas,
+            alpha = alpha,
+            population_size = pk,
+            generations = tot_gen,
+            pe = pe,
+            pm = pm,
+            pr = pr,
+            universe_size = ncol(universe),
+            cores = nuc
+          ),
+          final_population = sol
+        )
+    }
+
     # Retorna resultado obtido
-    return(list(
-      param = list(
-        obj_fun = ifelse(
-          all(alpha == 1),
-          metricas[1],
-          paste(alpha[alpha < 1], metricas[alpha < 1], sep = ' * ', collapse = ' + ')
-        ),
-        metrics = metricas,
-        alpha = alpha,
-        population_size = pk,
-        generations = tot_gen,
-        pe = pe,
-        pm = pm,
-        pr = pr,
-        universe_size = ncol(universe),
-        cores = nuc
-      ),
-      final_pop = sol,
-      progress = progress
-    ))
+    return(output)
 
   } #end_function
 
