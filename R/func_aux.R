@@ -34,6 +34,7 @@ data_gen <- function(
 
 
 # Pairwise Hamming distance [Morrison and Jong, 2002] --------------------
+
 pairwise_index <- function(pk) {
   index <-
     expand.grid(
@@ -41,13 +42,50 @@ pairwise_index <- function(pk) {
       uj = 2:pk
     )
   index <- index[index[, 1] < index[, 2], ]
+  index <- index[order(index$ui), ]
+  rownames(index) <- NULL
   return(index)
 }
 
-hamming_dist <- function(pop, index = pairwise_index(ncol(pop)), dist_function = 'd') {
-  res <-
-    apply(index, 1, function(x) {
-      sum(abs(pop[, x[1]] - pop[, x[2]]))
-    })
+hamming_dist <- function(pop, index = pairwise_index(ncol(pop)), cl = NULL) {
+  if (is.null(cl)) {
+    res <-
+      apply(index, 1, function(x) {
+        sum(abs(pop[, x[1]] - pop[, x[2]]))
+      })
+  } else {
+    res <-
+      parallel::parApply(cl, index, 1, function(x) {
+        sum(abs(pop[, x[1]] - pop[, x[2]]))
+      })
+  }
   return(sum(res))
+}
+
+
+
+# Co-association matrix ---------------------------------------------------
+
+coassoc_matrix <- function(pop, index = pairwise_index(nrow(pop)), matrix = T, cl = NULL) {
+  if (is.null(cl)) {
+    values <-
+      apply(pop, 2, function(sol) {
+        apply(index, 1, function(x) {
+          sol[x[1]] == sol[x[2]]
+        })
+      }) %>% apply(1, sum) / ncol(pop)
+  } else {
+    values <-
+      parallel::parApply(cl, pop, 2, function(sol) {
+        apply(index, 1, function(x) {
+          sol[x[1]] == sol[x[2]]
+        })
+      }) %>% apply(1, sum) / ncol(pop)
+  }
+  if (matrix) {
+    mat <- matrix(0, nrow(pop), nrow(pop))
+    mat[upper.tri(mat)] <- values
+    return(mat)
+  }
+  return(values)
 }
