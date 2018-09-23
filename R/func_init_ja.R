@@ -1,4 +1,4 @@
-decoder1_symphony <- function(u, n_agreg) {
+decoder1 <- function(u, n_agreg) {
   #u vetor de chaves aleatorias com n_obj posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
   n_obj <- length(u)
