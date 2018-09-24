@@ -49,17 +49,17 @@ pairwise_index <- function(pk) {
 
 hamming_dist <- function(pop, index = pairwise_index(ncol(pop)), cl = NULL) {
   if (is.null(cl)) {
-    res <-
+    hamming_dist <-
       apply(index, 1, function(x) {
         sum(abs(pop[, x[1]] - pop[, x[2]]))
       })
   } else {
-    res <-
+    hamming_dist <-
       parallel::parApply(cl, index, 1, function(x) {
         sum(abs(pop[, x[1]] - pop[, x[2]]))
       })
   }
-  return(sum(res))
+  return(sum(hamming_dist))
 }
 
 
@@ -68,24 +68,24 @@ hamming_dist <- function(pop, index = pairwise_index(ncol(pop)), cl = NULL) {
 
 coassoc_matrix <- function(pop, index = pairwise_index(nrow(pop)), matrix = T, cl = NULL) {
   if (is.null(cl)) {
-    values <-
-      apply(pop, 2, function(sol) {
+    coassociation <-
+      apply(pop, 2, function(clus) {
         apply(index, 1, function(x) {
-          sol[x[1]] == sol[x[2]]
+          clus[x[1]] == clus[x[2]]
         })
       }) %>% apply(1, sum) / ncol(pop)
   } else {
-    values <-
-      parallel::parApply(cl, pop, 2, function(sol) {
+    coassociation <-
+      parallel::parApply(cl, pop, 2, function(clus) {
         apply(index, 1, function(x) {
-          sol[x[1]] == sol[x[2]]
+          clus[x[1]] == clus[x[2]]
         })
       }) %>% apply(1, sum) / ncol(pop)
   }
   if (matrix) {
     mat <- matrix(0, nrow(pop), nrow(pop))
-    mat[upper.tri(mat)] <- values
+    mat[upper.tri(mat)] <- coassociation
     return(mat)
   }
-  return(values)
+  return(coassociation)
 }
