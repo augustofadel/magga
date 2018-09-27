@@ -155,29 +155,29 @@ opt_ma_brkga <-
         )
 
         # Novos individuos
-        next_pop <- cbind(children, mutant)
+        new_gen <- cbind(children, mutant)
 
         # Calculo fitness novos individuos
         if (parallel) {
           parallel::clusterExport(
             cl,
-            list('next_pop'),
+            list('new_gen'),
             envir = environment()
           )
           fitness <-
-            parallel::parApply(cl, next_pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-            matrix(ncol = ncol(next_pop), dimnames = list(metricas, NULL))
+            parallel::parApply(cl, new_gen, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
+            matrix(ncol = ncol(new_gen), dimnames = list(metricas, NULL))
         } else {
           fitness <-
-            apply(next_pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-            matrix(ncol = ncol(next_pop), dimnames = list(metricas, NULL))
+            apply(new_gen, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
+            matrix(ncol = ncol(new_gen), dimnames = list(metricas, NULL))
         }
 
         # Ordena novos individuos segundo fitness
-        next_pop <- rbind(next_pop, fitness)[, order(fitness[1, ])]
+        new_gen <- rbind(new_gen, fitness)[, order(fitness[1, ])]
 
         # Populacao da proxima geracao
-        current_pop <- cbind(current_pop[, 1:size_elite], next_pop)
+        current_pop <- cbind(current_pop[, 1:size_elite], new_gen)
         current_pop <- current_pop[, order(current_pop[n_obj + 1,])]
 
       }) #end_system.time
@@ -192,11 +192,22 @@ opt_ma_brkga <-
         progress$best[, generation] <- current_pop[1:n_obj, 1]
       }
 
-      # Testa criterio de parada
-      if ((abs(best_fobj - current_pop[n_obj + 1, 1]) / best_fobj) < stop_criteria[1]) {
-        stop_criteria_count <- stop_criteria_count + 1
-      } else {
-        stop_criteria_count <- 0
+      if (stop_criteria[2] < tot_gen) {
+        # Calcula melhoria percentual no valor da funcao objetivo
+        if (best_fobj == 0) {
+          improve <- ifelse(current_pop[n_obj + 1, 1] == 0, 0, -1)
+        } else {
+          improve <- (best_fobj - current_pop[n_obj + 1, 1]) / best_fobj
+        }
+
+        # Testa criterio de parada
+        if (improve >= 0 & improve < stop_criteria[1]) {
+          stop_criteria_count <- stop_criteria_count + 1
+        } else {
+          if (improve < 0)
+            warning(paste0('Generation ', generation, ': best fobj value greater than previous generation.'))
+          stop_criteria_count <- 0
+        }
       }
 
       # Atualiza barra de progresso
