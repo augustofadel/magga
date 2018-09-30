@@ -60,6 +60,8 @@ opt_ma_brkga <-
             lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
             purrr::set_names(metricas),
           # diversity = vector('numeric', tot_gen),
+          diversity = matrix(NA, nrow = tot_gen, ncol = 3,
+                             dimnames = list(NULL, c('prop_eq_sol', 'mean_diversity', 'sd_diversity'))),
           best = matrix(NA, nrow = n_obj, ncol = tot_gen),
           t = vector('numeric', tot_gen)
         )
@@ -186,6 +188,8 @@ opt_ma_brkga <-
       if (save_progress) {
         progress$t[generation] <- gen_time[[3]]
         # progress$diversity[generation] <- hamming_dist(current_pop, index, cl)
+        diversity <- comembership_diversity(current_pop, index, cl)
+        progress$diversity[generation, ] <- diversity
         for (metric in 1:nrow(fitness)) {
           progress$fitness[[metric]][generation,] <- current_pop[n_obj + metric,]
         }
@@ -230,7 +234,10 @@ opt_ma_brkga <-
           generations = 1:generation,
           # diversity = progress$diversity[1:generation],
           t = progress$t[1:generation]
-        )
+        ) %>%
+        bind_cols(progress$diversity %>% as.tibble())
+      if (any(names(diversity) != colnames(progress$diversity)))
+        warning('Inconsitensy in diversity metrics names.')
       for (metrics in metricas) {
         df_output <-
           df_output %>%
