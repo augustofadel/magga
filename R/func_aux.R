@@ -91,6 +91,43 @@ coassoc_matrix <- function(pop, index = pairwise_index(nrow(pop)), matrix = T, c
 }
 
 
+
+# Comembership based diversity --------------------------------------------
+# Tibshirani, R. and Walther, G. (2005). Cluster Validation by Prediction Strength. Journal of Computationaland Graphical Statistics, 14, 3, 511-528. http://amstat.tandfonline.com/doi/abs/10.1198/106186005X59243.
+
+comembership_diversity <- function(
+  pop,
+  index = pairwise_index(ncol(pop)),
+  cl = NULL
+) {
+  pairs_count <- choose(nrow(pop), 2)
+  if (is.null(cl)) {
+    comemb <-
+      apply(index, 1, function(x) {
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11 / pairs_count
+        # sum(
+        #   clusteval::comembership(pop[, x[1]]) & clusteval::comembership(pop[, x[2]])
+        # ) / pairs_count
+      })
+  } else {
+    comemb <-
+      parallel::parApply(cl, index, 1, function(x) {
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11 / pairs_count
+        # sum(
+        #   clusteval::comembership(pop[, x[1]]) & clusteval::comembership(pop[, x[2]])
+        # ) / pairs_count
+      })
+  }
+  output <- list(
+    prop_eq_sol = sum(comemb == 1) / ncol(pop),
+    mean_diversity = mean(comemb),
+    sd = sd(comemb)
+  )
+  return(output)
+}
+
+
+
 # multiplot ---------------------------------------------------------------
 
 # http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/

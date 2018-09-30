@@ -23,4 +23,5 @@ Imports:
     data.table (>= 1.10.4),
     sdcMicro (>= 5.1.1),
     pdist (>= 1.2),
-    Rsymphony (>= 0.1-28)
+    Rsymphony (>= 0.1-28),
+    clusteval (>= 0.1)
