@@ -118,7 +118,7 @@ comembership_diversity <- function(
         # ) / pairs_count
       })
   }
-  output <- list(
+  output <- c(
     prop_eq_sol = sum(comemb == 1) / ncol(pop),
     mean_diversity = mean(comemb),
     sd = sd(comemb)
