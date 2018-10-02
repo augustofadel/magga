@@ -4,28 +4,31 @@
 init_tsp <- function(
   dataset,
   dissim = NULL,
+  tour = NULL,
+  distance_vec = NULL,
   dist_method = 'euclidean',          # metrica de distancia
-  tsp_method = 'farthest_insertion'   # metodo TSP
+  tsp_method = 'farthest_insertion',  # metodo TSP
+  ...
 ) {
   n_obj <- nrow(dataset)
-  if (is.null(dissim)) {
-    # cat('\nCalculando matriz de distancias... ')
+  if (is.null(dissim) & (is.null(tour) | is.null(distance_vec))) {
     dissim <-
       dataset %>%
       dist(method = dist_method)
-    # cat('concluido.\n')
   }
-  # cat('Calculando ciclo TSP... ')
-  tour <-
-    dissim %>%
-    TSP::TSP() %>%
-    TSP::solve_TSP(method = tsp_method, two_opt = F)
-  # cat('concluido.\n')
-  distance_vec <- city_distance(
-    tour = tour,
-    dissim = dissim,
-    n_obj = n_obj
-  )
+  if (is.null(tour)) {
+    tour <-
+      dissim %>%
+      TSP::TSP() %>%
+      TSP::solve_TSP(method = tsp_method, two_opt = F)
+  }
+  if (is.null(distance_vec)) {
+    distance_vec <- city_distance(
+      tour = tour,
+      dissim = dissim,
+      n_obj = n_obj
+    )
+  }
   init_path <-
     tour_to_path(
       tour = tour,

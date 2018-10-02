@@ -1,6 +1,7 @@
 opt_ma_brkga <-
   function(
     dat = NULL,
+    pop_method = NULL,
     universe = NULL,
     aggr = 3,
     metricas = c('IL1', 'IL2'), # Quando mais de uma metrica e especificada, a primeira e adotada como funcao objetivo. As demais sao utilizadas apenas como metricas.
@@ -8,8 +9,8 @@ opt_ma_brkga <-
     stop_criteria = c(1, tot_gen), # Diferenca relativa no valor da funcao objetivo para a melhor solucao obtida em 'x' geracoes consecutivas. Ex.: stop_criteria = c(.01, 3) interrompe a excucao do algoritmo se, em 3 execucoes consecutivas, a diferenca no valor da funcao objetivo for inferior a 1%.
     dissim = NULL,
     dist_method = 'euclidean',
-    pk = 100,
-    tot_gen = 10,
+    pk = 50,
+    tot_gen = 100,
     pe = .1,
     pm = .15,
     pr = .9,
@@ -19,7 +20,7 @@ opt_ma_brkga <-
   ) {
 
     # Verifica input
-    if (is.null(dat) | is.null(universe) | is.null(aggr))
+    if (is.null(dat) | (is.null(universe) & is.null(pop_method)) | is.null(aggr))
       stop('Input parameters missing.')
     if (length(metricas) != length(alpha))
       stop('metricas and alpha must have same length.')
@@ -33,8 +34,10 @@ opt_ma_brkga <-
     if (is.list(universe))
       universe <- universe[[as.character(aggr)]]
 
-    if (nrow(universe) != nrow(dat))
-      stop('Invalid universe.')
+    if (is.null(pop_method)) {
+      if (nrow(universe) != nrow(dat))
+        stop('Invalid universe.')
+    }
     tipo <- !dat %>% sapply(class) %in% c('numeric', 'integer')
     if (all(tipo))
       stop('No numeric attibute found.')
@@ -68,22 +71,61 @@ opt_ma_brkga <-
       index <- pairwise_index(pk)
     }
 
-    # Composicao da populacao inicial
-    if (pk > ncol(universe)) {
-      repl <- T
-      warning('The solution universe is smaller than the population.')
-    } else {
-      repl <- F
-    }
-    pop_sel_prob <- rep(1, ncol(universe))
-    pop_sel <- sample(1:ncol(universe), pk, replace = repl, prob = pop_sel_prob)
-    pop_sel_prob[pop_sel] <- .1
-    pop <- universe[, pop_sel]
-
     # Paralelizacao
     parallel <- is.numeric(nuc)
+    cl <- NULL
     if (parallel)
       cl <- parallel::makeCluster(nuc)
+
+    # Composicao da populacao inicial
+    if (!is.null(universe)) {
+      if (pk > ncol(universe)) {
+        repl <- T
+        warning('The solution universe is smaller than the population.')
+      } else {
+        repl <- F
+      }
+      pop_sel_prob <- rep(1, ncol(universe))
+      pop_sel <- sample(1:ncol(universe), pk, replace = repl, prob = pop_sel_prob)
+      pop_sel_prob[pop_sel] <- .1
+      pop <- universe[, pop_sel]
+    } else {
+      if (pop_method == 'init_tsp'){
+        tour <- dissim %>%
+          TSP::TSP() %>%
+          TSP::solve_TSP(method = 'farthest_insertion', two_opt = F)
+        distance_vec <- city_distance(
+          tour = tour,
+          dissim = dissim,
+          n_obj = n_obj
+        )
+      } else {
+        tour <- distance_vec <- NULL
+      }
+      if (parallel) {
+        parallel::clusterExport(cl, pop_method)
+        pop <-
+          parallel::parSapply(
+            cl,
+            1:pk,
+            function(x) do.call(pop_method, list(u = runif(n_obj),
+                                                 n_agreg = aggr,
+                                                 dataset = dat,
+                                                 tour = tour,
+                                                 distance_vec = distance_vec))
+          )
+      } else {
+        pop <-
+          sapply(
+            1:pk,
+            function(x) do.call(pop_method, list(u = runif(n_obj),
+                                                 n_agreg = aggr,
+                                                 dataset = dat,
+                                                 tour = tour,
+                                                 distance_vec = distance_vec))
+          )
+      }
+    }
 
     # Calculo fitness populacao inicial
     if (parallel) {
@@ -135,9 +177,34 @@ opt_ma_brkga <-
         nelite <- current_pop[1:n_obj, (size_elite + 1):size_pop]
 
         # Solucoes mutantes
-        pop_sel <- sample(1:ncol(universe), size_mutant, prob = pop_sel_prob)
-        pop_sel_prob[pop_sel] <- pop_sel_prob[pop_sel] * .99
-        mutant <- universe[, pop_sel]
+        if (!is.null(universe)) {
+          pop_sel <- sample(1:ncol(universe), size_mutant, prob = pop_sel_prob)
+          pop_sel_prob[pop_sel] <- pop_sel_prob[pop_sel] * .99
+          mutant <- universe[, pop_sel]
+        } else {
+          if (parallel) {
+            mutant <-
+              parallel::parSapply(
+                cl,
+                1:size_mutant,
+                function(x) do.call(pop_method, list(u = runif(n_obj),
+                                                     n_agreg = aggr,
+                                                     dataset = dat,
+                                                     tour = tour,
+                                                     distance_vec = distance_vec))
+              )
+          } else {
+            mutant <-
+              sapply(
+                1:size_mutant,
+                function(x) do.call(pop_method, list(u = runif(n_obj),
+                                                     n_agreg = aggr,
+                                                     dataset = dat,
+                                                     tour = tour,
+                                                     distance_vec = distance_vec))
+              )
+          }
+        }
 
         # Crossover com regeneracao de solucoes inviaveis
         size_cros <- size_pop - ncol(elite) - ncol(mutant)
