@@ -59,9 +59,9 @@ opt_ma_brkga <-
     if (save_progress) {
       progress <-
         list(
-          fitness = vector('list', length(metricas)) %>%
+          fitness = vector('list', length(metricas) + 1) %>%
             lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
-            purrr::set_names(metricas),
+            purrr::set_names(c('fobj', metricas)),
           # diversity = vector('numeric', tot_gen),
           diversity = matrix(NA, nrow = tot_gen, ncol = 3,
                              dimnames = list(NULL, c('prop_eq_sol', 'mean_diversity', 'sd_diversity'))),
@@ -72,6 +72,8 @@ opt_ma_brkga <-
     }
 
     # Paralelizacao
+    if (nuc == 1)
+      nuc <- NULL
     parallel <- is.numeric(nuc)
     cl <- NULL
     if (parallel)
@@ -90,7 +92,7 @@ opt_ma_brkga <-
       pop_sel_prob[pop_sel] <- .1
       pop <- universe[, pop_sel]
     } else {
-      if (pop_method == 'init_tsp'){
+      if (pop_method == 'tsp'){
         tour <- dissim %>%
           TSP::TSP() %>%
           TSP::solve_TSP(method = 'farthest_insertion', two_opt = F)
@@ -103,14 +105,14 @@ opt_ma_brkga <-
         tour <- distance_vec <- NULL
       }
       if (parallel) {
-        parallel::clusterExport(cl, pop_method)
+        parallel::clusterExport(cl, list(pop_method, '%>%', 'tour_to_path', 'init_individual'))
         pop <-
           parallel::parSapply(
             cl,
             1:pk,
             function(x) do.call(pop_method, list(u = runif(n_obj),
                                                  n_agreg = aggr,
-                                                 dataset = dat,
+                                                 n_obj = n_obj,
                                                  tour = tour,
                                                  distance_vec = distance_vec))
           )
@@ -120,7 +122,7 @@ opt_ma_brkga <-
             1:pk,
             function(x) do.call(pop_method, list(u = runif(n_obj),
                                                  n_agreg = aggr,
-                                                 dataset = dat,
+                                                 n_obj = n_obj,
                                                  tour = tour,
                                                  distance_vec = distance_vec))
           )
@@ -136,11 +138,11 @@ opt_ma_brkga <-
       )
       fitness <-
         parallel::parApply(cl, pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-        matrix(ncol = pk, dimnames = list(metricas, NULL))
+        matrix(ncol = pk, dimnames = list(c('fobj', metricas), NULL))
     } else {
       fitness <-
         apply(pop, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-        matrix(ncol = pk, dimnames = list(metricas, NULL))
+        matrix(ncol = pk, dimnames = list(c('fobj', metricas), NULL))
     }
 
     # Ordena populacao segundo fitness
@@ -189,7 +191,7 @@ opt_ma_brkga <-
                 1:size_mutant,
                 function(x) do.call(pop_method, list(u = runif(n_obj),
                                                      n_agreg = aggr,
-                                                     dataset = dat,
+                                                     n_obj = n_obj,
                                                      tour = tour,
                                                      distance_vec = distance_vec))
               )
@@ -199,7 +201,7 @@ opt_ma_brkga <-
                 1:size_mutant,
                 function(x) do.call(pop_method, list(u = runif(n_obj),
                                                      n_agreg = aggr,
-                                                     dataset = dat,
+                                                     n_obj = n_obj,
                                                      tour = tour,
                                                      distance_vec = distance_vec))
               )
@@ -235,11 +237,11 @@ opt_ma_brkga <-
           )
           fitness <-
             parallel::parApply(cl, new_gen, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-            matrix(ncol = ncol(new_gen), dimnames = list(metricas, NULL))
+            matrix(ncol = ncol(new_gen), dimnames = list(c('fobj', metricas), NULL))
         } else {
           fitness <-
             apply(new_gen, 2, function(sol) {fit(dat, sol, metricas, alpha)}) %>%
-            matrix(ncol = ncol(new_gen), dimnames = list(metricas, NULL))
+            matrix(ncol = ncol(new_gen), dimnames = list(c('fobj', metricas), NULL))
         }
 
         # Ordena novos individuos segundo fitness
@@ -305,7 +307,7 @@ opt_ma_brkga <-
         bind_cols(progress$diversity %>% as.tibble())
       if (any(names(diversity) != colnames(progress$diversity)))
         warning('Inconsitensy in diversity metrics names.')
-      for (metrics in metricas) {
+      for (metrics in rownames(fitness)) {
         df_output <-
           df_output %>%
           add_column(!!metrics := progress$fitness[[metrics]][1:generation, 1])
@@ -322,7 +324,7 @@ opt_ma_brkga <-
             alpha = alpha,
             aggregation_level = aggr,
             pop_gen_method = ifelse(!is.null(universe), 'universe', pop_method),
-            universe_size = ifelse(!is.null(universe), ncol(universe), NULL),
+            universe_size = ifelse(!is.null(universe), ncol(universe), Inf),
             population_size = pk,
             generations = tot_gen,
             pe = pe,
@@ -346,12 +348,14 @@ opt_ma_brkga <-
             ),
             metrics = metricas,
             alpha = alpha,
+            aggregation_level = aggr,
+            pop_gen_method = ifelse(!is.null(universe), 'universe', pop_method),
+            universe_size = ifelse(!is.null(universe), ncol(universe), Inf),
             population_size = pk,
             generations = tot_gen,
             pe = pe,
             pm = pm,
             pr = pr,
-            universe_size = ncol(universe),
             cores = nuc
           ),
           final_population = sol

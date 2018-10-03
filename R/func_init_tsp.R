@@ -76,3 +76,19 @@ tour_to_path <- function(tour, distance_vec, n_obj) {
     unname()
   return(path)
 }
+
+
+# inicializa um individuo pelo PCV ----------------------------------------
+# com tour e distance_vec conhecidos
+
+tsp <- function(n_agreg, n_obj, tour, distance_vec, ...) {
+  init_path <-
+    tour_to_path(
+      tour = tour,
+      distance_vec = distance_vec,
+      n_obj = n_obj
+    ) %>%
+    order(method = 'radix')
+  clus <- init_individual(n_agreg, n_obj)[init_path]
+  return(clus)
+}

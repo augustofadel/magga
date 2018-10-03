@@ -75,7 +75,9 @@ fit <- function(
     function(x) do.call(x, list(dat, dat.agreg))
   )
   if (any(alpha < 1)) {
-    fit.vec <- c(sum(fit.vec[alpha < 1] * alpha[alpha < 1]), fit.vec[alpha == 1])
+    fit.vec <- c(sum(fit.vec[alpha < 1] * alpha[alpha < 1]), fit.vec)
+  } else {
+    fit.vec <- c(fit.vec[1], fit.vec)
   }
   return(fit.vec)
 }
