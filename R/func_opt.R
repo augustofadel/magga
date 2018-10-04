@@ -63,8 +63,12 @@ opt_ma_brkga <-
             lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
             purrr::set_names(c('fobj', metricas)),
           # diversity = vector('numeric', tot_gen),
-          diversity = matrix(NA, nrow = tot_gen, ncol = 3,
-                             dimnames = list(NULL, c('prop_eq_sol', 'mean_diversity', 'sd_diversity'))),
+          diversity = matrix(NA, nrow = tot_gen, ncol = 5,
+                             dimnames = list(NULL, c('prop_eq_sol',
+                                                     'mean_rand',
+                                                     'mean_jaccard',
+                                                     'mean_similarity',
+                                                     'sd_similarity'))),
           best = matrix(NA, nrow = n_obj, ncol = tot_gen),
           t = vector('numeric', tot_gen)
         )

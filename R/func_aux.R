@@ -104,28 +104,25 @@ comembership_diversity <- function(
   if (is.null(cl)) {
     comemb <-
       apply(index, 1, function(x) {
-        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11 / pairs_count
-        # sum(
-        #   clusteval::comembership(pop[, x[1]]) & clusteval::comembership(pop[, x[2]])
-        # ) / pairs_count
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])
       })
   } else {
     comemb <-
       parallel::parApply(cl, index, 1, function(x) {
-        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11 / pairs_count
-        # sum(
-        #   clusteval::comembership(pop[, x[1]]) & clusteval::comembership(pop[, x[2]])
-        # ) / pairs_count
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])
       })
   }
+  n_11 <- purrr::map_int(comemb, 'n_11')
+  n_00 <- purrr::map_int(comemb, 'n_00')
   output <- c(
-    prop_eq_sol = sum(comemb == 1) / ncol(pop),
-    mean_diversity = mean(comemb),
-    sd_diversity = sd(comemb)
+    prop_eq_sol = sum((n_11 / pairs_count) == 1) / ncol(pop),
+    mean_rand = mean((n_11 + n_00) / pairs_count),
+    mean_jaccard = mean(n_11 / (pairs_count - n_00)),
+    mean_similarity = mean(n_11 / pairs_count),
+    sd_similarity = sd(n_11 / pairs_count)
   )
   return(output)
 }
-
 
 
 # multiplot ---------------------------------------------------------------
