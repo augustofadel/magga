@@ -363,7 +363,7 @@ opt_ma_brkga <-
             cores = nuc
           ),
           final_population = sol,
-          fitness = progress$fitness
+          fitness = fitness
         )
     }
 
