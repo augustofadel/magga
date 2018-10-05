@@ -102,22 +102,22 @@ comembership_diversity <- function(
 ) {
   pairs_count <- choose(nrow(pop), 2)
   if (is.null(cl)) {
-    comemb <-
+    n_11 <-
       apply(index, 1, function(x) {
-        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11
       })
   } else {
-    comemb <-
+    n_11 <-
       parallel::parApply(cl, index, 1, function(x) {
-        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])
+        clusteval::comembership_table(pop[, x[1]], pop[, x[2]])$n_11
       })
   }
-  n_11 <- purrr::map_int(comemb, 'n_11')
-  n_00 <- purrr::map_int(comemb, 'n_00')
+  # n_11 <- purrr::map_int(comemb, 'n_11')
+  # n_00 <- purrr::map_int(comemb, 'n_00')
   output <- c(
     prop_eq_sol = sum((n_11 / pairs_count) == 1) / ncol(pop),
-    mean_rand = mean((n_11 + n_00) / pairs_count),
-    mean_jaccard = mean(n_11 / (pairs_count - n_00)),
+    # mean_rand = mean((n_11 + n_00) / pairs_count),
+    # mean_jaccard = mean(n_11 / (pairs_count - n_00)),
     mean_similarity = mean(n_11 / pairs_count),
     sd_similarity = sd(n_11 / pairs_count)
   )
