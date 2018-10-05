@@ -24,7 +24,7 @@ opt_ma_brkga <-
       stop('Input parameters missing.')
     if (length(metricas) != length(alpha))
       stop('metricas and alpha must have same length.')
-    if (any(alpha > 1) | any(alpha <= 0))
+    if (any(alpha > 1) | any(alpha < 0))
       stop('Invalid alpha values.')
 
     if (is.character(dat))
@@ -308,7 +308,7 @@ opt_ma_brkga <-
           # diversity = progress$diversity[1:generation],
           t = progress$t[1:generation]
         ) %>%
-        bind_cols(progress$diversity %>% as.tibble())
+        bind_cols(progress$diversity %>% tibble::as.tibble())
       if (any(names(diversity) != colnames(progress$diversity)))
         warning('Inconsitensy in diversity metrics names.')
       for (metrics in rownames(fitness)) {
