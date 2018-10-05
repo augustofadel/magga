@@ -66,8 +66,8 @@ opt_ma_brkga <-
           diversity = matrix(NA, nrow = tot_gen, ncol = 5,
                              dimnames = list(NULL, c('prop_eq_sol',
                                                      'mean_rand',
-                                                     'mean_jaccard',
-                                                     'mean_similarity',
+                                                     # 'mean_jaccard',
+                                                     # 'mean_similarity',
                                                      'sd_similarity'))),
           best = matrix(NA, nrow = n_obj, ncol = tot_gen),
           t = vector('numeric', tot_gen)
@@ -362,7 +362,8 @@ opt_ma_brkga <-
             pr = pr,
             cores = nuc
           ),
-          final_population = sol
+          final_population = sol,
+          fitness = progress$fitness
         )
     }
 
