@@ -2,8 +2,8 @@ decoder1 <- function(u, n_agreg, ...) {
   #u vetor de chaves aleatorias com n_obj posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
   n_obj <- length(u)
-  dv <- n_obj %% (2 * n_agreg)
-  ki <- n_obj %/% (2 * n_agreg)
+  dv <- n_obj %% (2 * n_agreg - 1)
+  ki <- n_obj %/% (2 * n_agreg - 1)
   kinf <- ifelse(dv == 0, ki, ki + 1)
   ksup <- n_obj %/% n_agreg
   k <- kinf:ksup
@@ -17,7 +17,7 @@ decoder1 <- function(u, n_agreg, ...) {
   bounds <-
     list(
       lower = list(ind = 1:kmax, val = rep(n_agreg, kmax)),
-      upper = list(ind = 1:kmax, val = rep(2 * n_agreg, kmax))
+      upper = list(ind = 1:kmax, val = rep(2 * n_agreg - 1, kmax))
     )
 
   # SYMPHONY is an open source solver for solving mixed integer linear programs (MILPs)
@@ -47,8 +47,8 @@ decoder1_glpk <- function(u, n_agreg, ...) {
   #u vetor de chaves aleatorias com n posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
   n_obj <- length(u)
-  dv <- n_obj %% (2 * n_agreg)
-  ki <- n_obj %/% (2 * n_agreg)
+  dv <- n_obj %% (2 * n_agreg - 1)
+  ki <- n_obj %/% (2 * n_agreg - 1)
   kinf <- ifelse(dv == 0, ki, ki + 1)
   ksup <- n_obj %/% n_agreg
   k <- kinf:ksup
@@ -59,8 +59,8 @@ decoder1_glpk <- function(u, n_agreg, ...) {
   desig <- '=='
   bounds <-
     list(
-      lower = list(ind=1:kmax,val = rep(n_agreg,kmax)),
-      upper = list(ind=1:kmax,val = rep(2*n_agreg,kmax))
+      lower = list(ind=1:kmax,val = rep(n_agreg, kmax)),
+      upper = list(ind=1:kmax,val = rep(2 * n_agreg - 1, kmax))
     )
 
   # GLPK (GNU Linear Programming Kit) is open source software for solving large-scale linear programming (LP), mixed integer linear programming ('MILP') and other related problems.
@@ -85,8 +85,8 @@ decoder1_minmax <- function(u, n_agreg, ...) {
   #u vetor de chaves aleatorias com n_obj posicoes correspondente ao n?mero de objeto
   #n_agreg limite inferior em relacao ao numero minimo de objetos por grupo
   n_obj <- length(u)
-  dv <- n_obj %% (2 * n_agreg)
-  ki <- n_obj %/% (2 * n_agreg)
+  dv <- n_obj %% (2 * n_agreg - 1)
+  ki <- n_obj %/% (2 * n_agreg - 1)
   kinf <- ifelse(dv == 0, ki, ki + 1)
   ksup <- n_obj %/% n_agreg
   k <- kinf:ksup
@@ -100,7 +100,7 @@ decoder1_minmax <- function(u, n_agreg, ...) {
   bounds <-
     list(
       lower = list(ind = 1:kmax, val = rep(n_agreg, kmax)),
-      upper = list(ind = 1:kmax, val = rep(2 * n_agreg, kmax))
+      upper = list(ind = 1:kmax, val = rep(2 * n_agreg - 1, kmax))
     )
 
   MAXMIN <- ifelse(mean(u) >= 0.5, F, T)
@@ -134,6 +134,7 @@ decoder2 <- function(u, n_agreg, ...) {
   nmin <- n_agreg
   nmax <- 2 * n_agreg - 1
   nt <- 0
+  # define numero de objetos em cada grupo:
   while(nmax >= n_agreg) {
     k <- k + 1
     nk <- round(nmin + u[k] * (nmax - nmin))
