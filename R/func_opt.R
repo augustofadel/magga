@@ -102,7 +102,7 @@ opt_ma_brkga <-
       pop_sel_prob[pop_sel] <- .1
       pop <- universe[, pop_sel]
     } else {
-      if (pop_method == 'tsp'){
+      if (str_detect(pop_method, 'tsp')){
         tour <- dissim %>%
           TSP::TSP() %>%
           TSP::solve_TSP(method = 'farthest_insertion', two_opt = F)
