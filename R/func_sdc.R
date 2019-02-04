@@ -174,7 +174,7 @@ IL3 <- function(dat, dat.agreg) {
     sum() %>%
     `/`((p * (p + 1))/2)
 
-  return(sum(IL) / 5)
+  return(sum(IL) / 5 * 100)
 }
 
 
@@ -187,7 +187,7 @@ devvar <- function(dat, dat.agreg) {
     (abs(var(dat) - var(dat.agreg)) / abs(var(dat))) %>%
     sum() %>%
     `/`(ncol(dat))
-  return(IL)
+  return(IL * 100)
 }
 
 acov <- function(dat, dat.agreg) {
@@ -195,7 +195,7 @@ acov <- function(dat, dat.agreg) {
     (abs(cov(dat) - cov(dat.agreg)) / abs(cov(dat))) %>%
     sum() %>%
     `/`(2 * ncol(dat))
-  return(IL)
+  return(IL * 100)
 }
 
 acor <- function(dat, dat.agreg) {
@@ -203,7 +203,7 @@ acor <- function(dat, dat.agreg) {
     (abs(cor(dat) - cor(dat.agreg)) / abs(cor(dat))) %>%
     sum() %>%
     `/`(2 * ncol(dat))
-  return(IL)
+  return(IL * 100)
 }
 
 amad <- function(dat, dat.agreg) {
@@ -212,5 +212,5 @@ amad <- function(dat, dat.agreg) {
   IL <-
     (abs(mad_dat - mad_dat.agreg) / abs(mad_dat)) %>%
     sum(na.rm = TRUE)
-  return(IL)
+  return(IL * 100)
 }
