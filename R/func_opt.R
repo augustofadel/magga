@@ -12,7 +12,7 @@ opt_ma_brkga <-
     pk = 50,
     tot_gen = 100,
     pe = .1,
-    pm = .2,
+    pm = .15,
     pr = .9,
     nuc = 2,
     save_progress = T,
@@ -23,7 +23,7 @@ opt_ma_brkga <-
     if (is.null(dat) | (is.null(universe) & is.null(pop_method)) | is.null(aggr))
       stop('Input parameters missing.')
     if (length(metricas) != length(alpha))
-      stop('Metrics and alpha must have same length.')
+      stop('metricas and alpha must have same length.')
     if (any(alpha > 1) | any(alpha < 0))
       stop('Invalid alpha values.')
 
@@ -59,24 +59,18 @@ opt_ma_brkga <-
     if (save_progress) {
       progress <-
         list(
-          fitness =
-            vector('list', length(metricas) + 1) %>%
-            lapply(function(y) {matrix(NA, nrow = tot_gen + 1, ncol = pk)}) %>%
+          fitness = vector('list', length(metricas) + 1) %>%
+            lapply(function(y) {matrix(NA, nrow = tot_gen, ncol = pk)}) %>%
             purrr::set_names(c('fobj', metricas)),
           # diversity = vector('numeric', tot_gen),
-          diversity =
-            matrix(
-              NA,
-              nrow = tot_gen + 1,
-              ncol = 3,
-              dimnames = list(NULL, c('prop_eq_sol',
-                                      'mean_rand',
-                                      # 'mean_jaccard',
-                                      # 'mean_similarity',
-                                      'sd_similarity'))
-            ),
-          best = matrix(NA, nrow = n_obj, ncol = tot_gen + 1),
-          t = vector('numeric', tot_gen + 1)
+          diversity = matrix(NA, nrow = tot_gen, ncol = 3,
+                             dimnames = list(NULL, c('prop_eq_sol',
+                                                     'mean_rand',
+                                                     # 'mean_jaccard',
+                                                     # 'mean_similarity',
+                                                     'sd_similarity'))),
+          best = matrix(NA, nrow = n_obj, ncol = tot_gen),
+          t = vector('numeric', tot_gen)
         )
       index <- pairwise_index(pk)
     }
@@ -102,7 +96,7 @@ opt_ma_brkga <-
       pop_sel_prob[pop_sel] <- .1
       pop <- universe[, pop_sel]
     } else {
-      if (str_detect(pop_method, 'tsp')){
+      if (stringr::str_detect(pop_method, 'tsp')){
         tour <- dissim %>%
           TSP::TSP() %>%
           TSP::solve_TSP(method = 'farthest_insertion', two_opt = F)
@@ -115,26 +109,36 @@ opt_ma_brkga <-
         tour <- distance_vec <- NULL
       }
       if (parallel) {
-        parallel::clusterExport(cl, list(pop_method, '%>%', 'tour_to_path', 'init_individual'))
+        parallel::clusterExport(cl, list(str_remove_all(pop_method, '_.*'), '%>%', 'tour_to_path', 'init_individual', 'str_remove_all'))
         pop <-
           parallel::parSapply(
             cl,
             1:pk,
-            function(x) do.call(pop_method, list(u = runif(n_obj),
-                                                 n_agreg = aggr,
-                                                 n_obj = n_obj,
-                                                 tour = tour,
-                                                 distance_vec = distance_vec))
+            function(x) do.call(
+              str_remove_all(pop_method, '_.*'),
+              list(
+                u = runif(n_obj),
+                n_agreg = aggr,
+                n_obj = n_obj,
+                tour = tour,
+                distance_vec = distance_vec
+              )
+            )
           )
       } else {
         pop <-
           sapply(
             1:pk,
-            function(x) do.call(pop_method, list(u = runif(n_obj),
-                                                 n_agreg = aggr,
-                                                 n_obj = n_obj,
-                                                 tour = tour,
-                                                 distance_vec = distance_vec))
+            function(x) do.call(
+              str_remove_all(pop_method, '_.*'),
+              list(
+                u = runif(n_obj),
+                n_agreg = aggr,
+                n_obj = n_obj,
+                tour = tour,
+                distance_vec = distance_vec
+              )
+            )
           )
       }
     }
@@ -165,18 +169,6 @@ opt_ma_brkga <-
     current_pop <- pop
     generation <- 0
     stop_criteria_count <- 0
-
-    # Salva condicao inicial
-    if (save_progress) {
-      progress$t[1] <- 0
-      # progress$diversity[generation] <- hamming_dist(current_pop, index, cl)
-      diversity <- comembership_diversity(current_pop, index, cl)
-      progress$diversity[1, ] <- diversity
-      for (metric in 1:nrow(fitness)) {
-        progress$fitness[[metric]][1,] <- current_pop[n_obj + metric,]
-      }
-      progress$best[, 1] <- current_pop[1:n_obj, 1]
-    }
 
     # Inicializa barra de progresso
     if (show_progress_bar)
@@ -211,21 +203,31 @@ opt_ma_brkga <-
               parallel::parSapply(
                 cl,
                 1:size_mutant,
-                function(x) do.call(pop_method, list(u = runif(n_obj),
-                                                     n_agreg = aggr,
-                                                     n_obj = n_obj,
-                                                     tour = tour,
-                                                     distance_vec = distance_vec))
+                function(x) do.call(
+                  str_remove_all(pop_method, '.*_'),
+                  list(
+                    u = runif(n_obj),
+                    n_agreg = aggr,
+                    n_obj = n_obj,
+                    tour = tour,
+                    distance_vec = distance_vec
+                  )
+                )
               )
           } else {
             mutant <-
               sapply(
                 1:size_mutant,
-                function(x) do.call(pop_method, list(u = runif(n_obj),
-                                                     n_agreg = aggr,
-                                                     n_obj = n_obj,
-                                                     tour = tour,
-                                                     distance_vec = distance_vec))
+                function(x) do.call(
+                  str_remove_all(pop_method, '.*_'),
+                  list(
+                    u = runif(n_obj),
+                    n_agreg = aggr,
+                    n_obj = n_obj,
+                    tour = tour,
+                    distance_vec = distance_vec
+                  )
+                )
               )
           }
         }
@@ -277,14 +279,14 @@ opt_ma_brkga <-
 
       # Salva progresso
       if (save_progress) {
-        progress$t[generation + 1] <- gen_time[[3]]
+        progress$t[generation] <- gen_time[[3]]
         # progress$diversity[generation] <- hamming_dist(current_pop, index, cl)
         diversity <- comembership_diversity(current_pop, index, cl)
-        progress$diversity[generation + 1, ] <- diversity
+        progress$diversity[generation, ] <- diversity
         for (metric in 1:nrow(fitness)) {
-          progress$fitness[[metric]][generation + 1,] <- current_pop[n_obj + metric,]
+          progress$fitness[[metric]][generation,] <- current_pop[n_obj + metric,]
         }
-        progress$best[, generation + 1] <- current_pop[1:n_obj, 1]
+        progress$best[, generation] <- current_pop[1:n_obj, 1]
       }
 
       if (stop_criteria[2] < tot_gen) {
@@ -322,9 +324,9 @@ opt_ma_brkga <-
     if (save_progress) {
       df_output <-
         tibble(
-          generations = 0:generation,
+          generations = 1:generation,
           # diversity = progress$diversity[1:generation],
-          t = progress$t[1:(generation + 1)]
+          t = progress$t[1:generation]
         ) %>%
         bind_cols(progress$diversity %>% tibble::as.tibble())
       if (any(names(diversity) != colnames(progress$diversity)))
@@ -332,7 +334,7 @@ opt_ma_brkga <-
       for (metrics in rownames(fitness)) {
         df_output <-
           df_output %>%
-          add_column(!!metrics := progress$fitness[[metrics]][1:(generation + 1), 1])
+          add_column(!!metrics := progress$fitness[[metrics]][1:generation, 1])
       }
       output <-
         list(
