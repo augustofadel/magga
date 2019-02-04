@@ -69,15 +69,17 @@ fit <- function(
   metricas = c('DLD', 'SDID', 'IL1', 'IL2', 'IL2_r', 'IL3'),
   alpha = rep(1, length(metricas))
 ) {
+  # if (any(alpha > 1) | any(alpha < 0))
+  #   stop('Invalid alpha values.')
   dat.agreg <- agreg(dat, clus)
   fit.vec <- sapply(
     metricas,
     function(x) do.call(x, list(dat, dat.agreg))
   )
-  if (any(alpha < 1)) {
-    fit.vec <- c(sum(fit.vec[alpha < 1] * alpha[alpha < 1]), fit.vec)
+  if (any(alpha == 1)) {
+    fit.vec <- c(fit.vec[alpha == 1], fit.vec)
   } else {
-    fit.vec <- c(fit.vec[1], fit.vec)
+    fit.vec <- c(sum(fit.vec[alpha > 0] * alpha[alpha > 0]), fit.vec)
   }
   return(fit.vec)
 }
