@@ -4,6 +4,13 @@
 # objetivos: IL1, IL2, IL3, DLD, SDID
 
 
+# TODO: paralelizar via furrr
+# TODO: criar função para gerar objeto input (com dataset, m. dissimilatidades, parâmetros, inicialização, etc)
+# TODO: simplificar função magga
+# TODO: eliminar recursos/módulos não utilizados
+# TODO: comentários em inglês
+
+
 magga <- function
 
 
