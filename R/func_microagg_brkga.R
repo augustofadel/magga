@@ -7,8 +7,10 @@
 # TODO: paralelizar via furrr
 # TODO: criar função para gerar objeto input (com dataset, m. dissimilatidades, parâmetros, inicialização, etc)
 # TODO: simplificar função magga
-# TODO: eliminar recursos/módulos não utilizados
+# TODO: remover recursos/módulos não utilizados
 # TODO: comentários em inglês
+# TODO: manter apenas crossover regen
+# TODO: remover multik
 
 
 magga <- function
